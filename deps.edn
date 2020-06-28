@@ -1,19 +1,43 @@
 {
- :paths ["src"]
+ :paths ["src" "resources"]
 
  :deps
- {org.clojure/clojure  {:mvn/version "1.10.1"}
-  camel-snake-kebab    {:mvn/version "0.4.0"}
-  nrepl                {:mvn/version "0.6.0"}
-  com.taoensso/tempura {:mvn/version "1.2.1"}  ; i18n
-  juxt/clip            {:mvn/version "0.16.0"} ; state management
-  aero                 {:mvn/version "1.1.6"}  ; config management
+ {
+  ;; generally useful
+  org.clojure/clojure         {:mvn/version "1.10.1"}
+  org.clojure/tools.namespace {:mvn/version "1.0.0"}
+  camel-snake-kebab           {:mvn/version "0.4.1"}
+  nrepl                       {:mvn/version "0.7.0"}  ; networked repl
+  com.taoensso/tempura        {:mvn/version "1.2.1"}  ; i18n
+  com.taoensso/timbre         {:mvn/version "4.10.0"} ; logging
+  com.fzakaria/slf4j-timbre   {:mvn/version "0.3.19"} ; send other libraries' logs to timbre
+  aero                        {:mvn/version "1.1.6"}  ; config management
+  ;; still deciding the best way to do state
+  juxt/clip                   {:mvn/version "0.18.0"} ; state management
+  integrant                   {:mvn/version "0.8.0"}  ; state management
+  integrant/repl              {:mvn/version "0.3.1"}
 
 
-  com.taoensso/timbre       {:mvn/version "4.10.0"} ; logging
-  com.fzakaria/slf4j-timbre {:mvn/version "0.3.19"} ; send other libraries' logs to timbre
+  ;; web stuff
+  metosin/jsonista               {:mvn/version "0.2.6"}  ; json encode/decode
+  metosin/muuntaja               {:mvn/version "0.6.7"}  ; content negotiation
+  metosin/reitit                 {:mvn/version "0.5.2"}  ; routing
+  metosin/ring-http-response     {:mvn/version "0.9.1"}  ; http response helpers
+  info.sunng/ring-jetty9-adapter {:mvn/version "0.13.0"} ; web server
 
-  ;; still testing the waters with this
+  ;; sql db stuff
+  org.postgresql/postgresql {:mvn/version "42.2.14"}
+  seancorfield/next.jdbc    {:mvn/version "1.0.478"}
+  hikari-cp                 {:mvn/version "2.12.0"} ; connection pooling
+  com.layerware/hugsql      {:mvn/version "0.5.1"}  ; sql generation
+  migratus                  {:mvn/version "1.2.8"}  ; migrations
+
+  ;; experimental db stuff
+  io.replikativ/datahike {:mvn/version "0.3.1"}
+  com.wsscode/pathom     {:mvn/version "2.2.31"}
+
+
+  ;; iffy
   gnl/ghostwheel {:mvn/version "0.3.9"}
   }
 
@@ -31,7 +55,11 @@
 
   :build
   {:extra-deps
-   {seancorfield/depstar {:mvn/version "1.0.94" }}
+   {seancorfield/depstar {:mvn/version "1.0.94"}}
    :main-opts
-   ["-m" "hf.depstar.uberjar" "target/paragon.jar"]}}
+   ["-m" "hf.depstar.uberjar" "target/paragon.jar"]}
+
+  :outdated
+  {:extra-deps {olical/depot {:mvn/version "1.8.4"}}
+   :main-opts  ["-m" "depot.outdated.main"]}}
  }
