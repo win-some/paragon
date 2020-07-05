@@ -5,7 +5,7 @@
 
 
 (>defn read-config
-       "Read the system config from the classpath, with values for the given profile."
-       [profile]
-       [keyword? => map?]
-       (aero/read-config (io/resource "system-config.edn") {:profile profile}))
+  "Read the system config from the classpath, with values for the given profile."
+  [profile]
+  [keyword? => map?]
+  (aero/read-config (io/resource "system-config.edn") {:profile profile}))

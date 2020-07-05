@@ -3,6 +3,6 @@
             [paragon.services.config :as config]
             [juxt.clip.repl :as clipr :refer [start stop reset set-init! system]]))
 
-(set-init! #(config/read-config :dev))
+(println "(start) to start; (reset) to reset; (stop) to stop;")
 
-(config/read-config :dev)
+(set-init! #(:juxt.clip/system (config/read-config :dev)))

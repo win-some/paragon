@@ -7,16 +7,19 @@
   org.clojure/clojure         {:mvn/version "1.10.1"}
   org.clojure/tools.namespace {:mvn/version "1.0.0"}
   camel-snake-kebab           {:mvn/version "0.4.1"}
+  metosin/tilakone            {:mvn/version "0.0.4"} ; fsm
+  jarohen/chime               {:mvn/version "0.3.2"}  ; scheduling
   nrepl                       {:mvn/version "0.7.0"}  ; networked repl
   com.taoensso/tempura        {:mvn/version "1.2.1"}  ; i18n
   com.taoensso/timbre         {:mvn/version "4.10.0"} ; logging
   com.fzakaria/slf4j-timbre   {:mvn/version "0.3.19"} ; send other libraries' logs to timbre
   aero                        {:mvn/version "1.1.6"}  ; config management
-  ;; still deciding the best way to do state
-  juxt/clip                   {:mvn/version "0.18.0"} ; state management
-  integrant                   {:mvn/version "0.8.0"}  ; state management
-  integrant/repl              {:mvn/version "0.3.1"}
+  juxt/clip                   {:mvn/version "0.18.0"} ; state management, repl/reloaded workflow
 
+  ;; async
+  manifold               {:mvn/version "0.1.8"}
+  funcool/promesa        {:mvn/version "4.0.0"}
+  org.clojure/core.async {:mvn/version "1.2.603"}
 
   ;; web stuff
   metosin/jsonista               {:mvn/version "0.2.6"}  ; json encode/decode
@@ -32,18 +35,22 @@
   com.layerware/hugsql      {:mvn/version "0.5.1"}  ; sql generation
   migratus                  {:mvn/version "1.2.8"}  ; migrations
 
-  ;; experimental db stuff
+  ;; datalog db stuff
   io.replikativ/datahike {:mvn/version "0.3.1"}
   com.wsscode/pathom     {:mvn/version "2.2.31"}
+  juxt/crux              {:mvn/version "19.04-1.0.2-alpha"}
 
-
-  ;; iffy
+  ;; experimental
+  lambdaisland/regal {:git/url "https://github.com/lambdaisland/regal.git"
+                      :sha "26c1c95aee28fa34125bac60a1136254b4231418"} ; regex
+  metosin/malli {:local/root "/home/winsome/scratch/malli"}
   gnl/ghostwheel {:mvn/version "0.3.9"}
   }
 
  :aliases
  {:dev
-  {:jvm-opts
+  {:extra-paths ["dev"]
+   :jvm-opts
    ["-Dghostwheel.enabled=true"]}
 
   :test

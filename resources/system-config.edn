@@ -1,16 +1,12 @@
-{
- :components
- {:paragon/config
-  {:start
-   {:db-uri #profile {:dev {:backend :file :path "resources/db/main-dev" }
-                      :test {:backend :file :path "resources/db/main-test" }
-                      :prod {:backend :file :path "resources/db/main" }}
-    :http-port #or [#env PORT 3000]}}
+{:db-uri #profile {:dev {:backend :file :path "resources/db/main-dev" }
+                   :test {:backend :file :path "resources/db/main-test" }
+                   :prod {:backend :file :path "resources/db/main" }}
+ :juxt.clip/system
+ {:components
+  {:paragon/db
+   {:pre-start (paragon.services.datahike/initialize-db! #ref [:db-uri])
+    :start (paragon.services.datahike/connect-db! #ref [:db-uri])}
 
-  :paragon/db
-  {:pre-start (paragon.services.datahike/initialize-db (:db-uri (clip/ref :paragon/config)))
-   :start (paragon.services.datahike/connect-db (:db-uri (clip/ref :paragon/config)))}
-
-  :paragon/http
-  {:start (paragon.services.http/start-server (:http-port (clip/ref :paragon/config)))
-   :stop (paragon.services.http/stop-server this)}}}
+   :paragon/http
+   {:start (paragon.services.http/start-server #or [#env PORT 3000])
+    :stop (paragon.services.http/stop-server this)}}}}

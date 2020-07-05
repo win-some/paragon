@@ -2,3 +2,4 @@ target
 .cpcache
 .clj-kondo/.cache
 .nrepl-port
+resources/db
