@@ -1,6 +1,4 @@
-(ns paragon.components.mrdt.mdrdt
-  (:require [clojure.spec.alpha :as s]
-            [clojure.set :as set]))
+(ns paragon.components.mrdt.mrdt)
 
 (defn seq-disj
   "Given an element and collection, will return collection without the element or the
@@ -130,7 +128,7 @@
 
   )
 
-(s/def ::characteristic-relations (s/keys :req [::mem ::ord]))
+#_(s/def ::characteristic-relations (s/keys :req [::mem ::ord]))
 
 (defn build-mem
   [coll]
@@ -146,9 +144,82 @@
       (recur rest (into ob (for [x rest] [head x])))
       ob)))
 
+(defn seq->relations
+  [s]
+  {:mem (build-mem s)
+   :ord (build-ob s)})
+
+#_(defn occurs-before?
+  "Takes an observed-before tuple and a seq and returns the seq with the relation marked
+  if the tuple is true."
+  [[a b] seq]
+  (let [xxx (split-with )]))
+
 (comment
+  (let [[front [target & back]] (split-with (partial not= 1) [1 2 3])]
+    (concat front [[::found target]] back))
+  ([:paragon.components.mrdt.mrdt/found 1] 2 3)
+
+  (let [[front [target & back]] (split-with (partial not= 1) [1 1 1])
+        a-result (concat front [[::found target]] back)
+        [front [target & back]] (split-with (partial not= 1) a-result)]
+    (concat front [[::found target]] back))
+  ([:paragon.components.mrdt.mrdt/found 1] [:paragon.components.mrdt.mrdt/found 1] 1)
+  ([:paragon.components.mrdt.mrdt/found 1] 1 1)
+  ;; this tagging approach won't work
+
+
+  )
+
+(defn relations->seq
+  [{:keys [mem ord]}]
+  ;; start with the mem relation
+  ;; for every tuple in ord, check that it is true
+  ;; if it isn't swap? shift? make it so
+  (reduce (fn [g [a b]]
+            (update g a (fnil conj []) b ))
+          {}
+          ord)
+  )
+;; step 1 - build directed graph
+;; step 2 - sort it topologically
+;; step 3 - apply arbitration edge for consistent order
+
+
+;; L ← Empty list that will contain the sorted elements
+;;  in my case, that's nodes that are never second
+;; S ← Set of all nodes with no incoming edge
+
+;; while S is not empty do
+;;     remove a node n from S
+;;     add n to tail of L
+;;     for each node m with an edge e from n to m do
+;;         remove edge e from the graph
+;;         if m has no other incoming edges then
+;;             insert m into S
+
+;; if graph has edges then
+;;     return error   (graph has at least one cycle)
+;; else
+;;     return L   (a topologically sorted order)
+
+(comment
+  (seq->relations [1 2 3])
+  {:mem [1 2 3], :ord [[1 2] [1 3] [2 3]]}
+  (relations->seq (seq->relations [1 2 3]))
+  {1 [2 3], 2 [3]}
+
+  (seq->relations [1 1 1])
+  {:mem [1 1 1], :ord [[1 1] [1 1] [1 1]]}
+  (relations->seq (seq->relations [1 1 1]))
+  {1 [1 1 1]}
+
+  {1 #{3 2}, 2 #{3}}
+  {1 3, 2 3}
+
   (build-ob [1 1 1])
   [[1 1] [1 1] [1 1]]
+
   (build-ob [1 2 3])
   [[1 2] [1 3] [2 3]]
   )
@@ -160,11 +231,6 @@
   [s1 s2]
   (for [a s1 b s2]
     [a b]))
-
-(defn seq->relations
-  [s]
-  {:mem (build-mem s)
-   :ord (build-ob s)})
 
 (defn merge-replicas
   "Take the characteristic relations of the lowest common ancestor (lca), replica 1 (r1),
@@ -183,10 +249,6 @@
                             ;; the new order can only contain merged members
                             (seq-product merged-mem merged-mem))}))
 
-(defn relations->seq
-  [rels]
-  )
-
 (comment
   (for [a [1 2] b [:red :white :green]]
     [a b])
@@ -198,4 +260,41 @@
   {:mem [2 3 4 5 6], :ord [[2 3] [4 5] [4 6] [5 6]]}
 
   {:mem [2 3 4 5 6], :ord [[1 2] [1 3] [2 3] [4 5] [4 6] [5 6]]}
+  )
+
+(comment
+  (let [l (seq->relations [1 2])
+        r1 (seq->relations [2])
+        r2 (seq->relations [2])]
+    (merge-replicas l r1 r2)
+    (merge-replicas l r2 r1))
+  {:mem [2], :ord []}
+  {:mem [2], :ord []}
+
+  ;; ---
+  (let [l (seq->relations [1])
+        r1 (seq->relations [1 2])
+        r2 (seq->relations [1 3])]
+    (merge-replicas l r1 r2)
+    (merge-replicas l r2 r1))
+  {:mem [1 3 2], :ord [[1 3] [1 2]]}
+  {:mem [1 2 3], :ord [[1 2] [1 3]]}
+  ;; expected ord [[1 2] [1 3] [2 3]] -> where could the [2 3] come from?
+  ;; the only place I can think of is the product, but we're intersecting that so it has to be common
+
+  ;; --
+  (let [l (seq->relations [1])
+        r1 (seq->relations [])
+        r2 (seq->relations [])
+        r2' (seq->relations [2])]
+    (merge-replicas l r1 r2)
+    (merge-replicas l r1 r2')
+    (merge-replicas l r2' r1))
+  {:mem [2], :ord []}
+  {:mem [2], :ord []}
+  {:mem [], :ord []}
+
+
+  (let [])
+
   )
