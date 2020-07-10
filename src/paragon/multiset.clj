@@ -1,13 +1,11 @@
 (ns paragon.multiset
-  (:require [clojure.pprint :as pprint])
-  (:import (java.util Collection)
-           (clojure.lang IPersistentMap)))
+  (:require [clojure.pprint :as pprint]))
 
 (defprotocol Multiplicities
   (multiplicities [this]))
 
-(deftype Multiset [^IPersistentMap meta
-                   ^IPersistentMap multiplicities
+(deftype Multiset [^clojure.lang.IPersistentMap meta
+                   ^clojure.lang.IPersistentMap multiplicities
                    ^int size]
   clojure.lang.IPersistentSet
   (get [this k]
@@ -17,7 +15,7 @@
     (boolean (find multiplicities k)))
   (disjoin [this k]
     (if-let [v (get multiplicities k)]
-      (->Multiset
+      (Multiset.
        meta
        (if (= 1 v)
          (dissoc multiplicities k)
@@ -28,11 +26,11 @@
 
   clojure.lang.IPersistentCollection
   (cons [this k]
-    (->Multiset
+    (Multiset.
      meta
      (update multiplicities k (fnil inc 0))
      (inc size)))
-  (empty [this] (with-meta (->Multiset nil {} 0) meta))
+  (empty [this] (with-meta (Multiset. nil {} 0) meta))
   (equiv [this x] (.equals this x))
 
   clojure.lang.Seqable
@@ -49,7 +47,7 @@
 
   clojure.lang.IObj
   (withMeta [this m]
-    (->Multiset m multiplicities size))
+    (Multiset. m multiplicities size))
 
   Object
   (equals [this x]
@@ -68,7 +66,7 @@
       r
       default))
 
-  Collection
+  java.util.Collection
   (isEmpty [this]
     (zero? size))
   (size [this] size)
@@ -82,8 +80,7 @@
     (.containsAll ^Collection (into #{} this) coll))
 
   Multiplicities
-  (multiplicities [this] multiplicities)
-  )
+  (multiplicities [this] multiplicities))
 
 (defmethod print-method Multiset
   [^Multiset mset ^java.io.Writer w]
@@ -93,27 +90,10 @@
   [^Multiset mset]
   (pr mset))
 
-(comment
-  (= (Multiset. nil {} 0)
-     (Multiset. nil {} 0))
-  (empty #mset [1 1 2])
-  (conj #mset [] 1)
-  (conj #mset [1] 1)
-  (conj #mset [1 1] 3)
-  (disj #mset [1 1 3] 3)
-
-  (count #mset [1  3])
-
-
-
-
-
-  )
-
 (defn multiset
   "Create a multiset from a sequence"
   ([]
-   {})
+   (->Multiset nil {} 0))
   ([s]
    (->Multiset nil (frequencies s) (count s))))
 
@@ -145,12 +125,6 @@
        result)))
   ([ms1 ms2 & multisets]
    (reduce union ms1 (clojure.core/conj multisets ms2))))
-
-(comment
-  (union #mset [1 1 2 3] #mset [1 6 7])
-  #mset [1 1 1 2 3 6 7]
-
-  )
 
 (defn intersection
   "Returns only the common keys of the multisets."
@@ -191,15 +165,17 @@
 (defn product
   "Returns the cartesian product of two sets."
   [ms1 ms2]
-  (for [a (seq ms1) b (seq ms2)]
-    [a b]))
+  (multiset (for [a (seq ms1) b (seq ms2)]
+              [a b])))
 
 (comment
   (multiset [1 2 3 1 2 3 nil true false])
 
-  (for [a [1 2 3] b [4 5 6]]
+  (for [a [1 2] b [:red :white :green]]
     [a b])
-  (product (multiset [1 1 1]) (multiset [4 5 6]))
+  (product (multiset [1 1 2]) (multiset [:red :white :green]))
+  #mset [[1 :red] [1 :red] [1 :white] [1 :white] [1 :green] [1 :green] [2 :red] [2 :white] [2 :green]]
+  #mset [[1 4] [1 4] [1 4] [1 5] [1 5] [1 5] [1 6] [1 6] [1 6]]
   ([1 4] [1 5] [1 6] [1 4] [1 5] [1 6] [1 4] [1 5] [1 6])
   ([[1 3] [4 1]] [[1 3] [5 1]] [[1 3] [6 1]])
   (reduce
