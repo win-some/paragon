@@ -7,7 +7,10 @@
   org.clojure/clojure         {:mvn/version "1.10.1"}
   org.clojure/tools.namespace {:mvn/version "1.0.0"}
   camel-snake-kebab           {:mvn/version "0.4.1"}
-  idle/multiset               {:local/root "/home/winsome/scratch/multiset"} ; multiset
+  idle/multiset               {:local/root "/home/winsome/scratch/multiset"
+                               :git/url "https://github.com/win-some/multiset"
+                               :sha "80deac7a58ebc27a3f1d0c171e7442c3270b16a6"} ; multiset
+  ubergraph                   {:mvn/version "0.8.2"}
   metosin/tilakone            {:mvn/version "0.0.4"}  ; fsm
   jarohen/chime               {:mvn/version "0.3.2"}  ; scheduling
   nrepl                       {:mvn/version "0.7.0"}  ; networked repl
@@ -44,7 +47,7 @@
   ;; experimental
   lambdaisland/regal {:git/url "https://github.com/lambdaisland/regal.git"
                       :sha "26c1c95aee28fa34125bac60a1136254b4231418"} ; regex
-  metosin/malli {:local/root "/home/winsome/scratch/malli"}
+  #_metosin/malli #_{:local/root "/home/winsome/scratch/malli"}
   orchestra {:mvn/version "2018.12.06-2"}
   gnl/ghostwheel {:mvn/version "0.3.9"}
   }
