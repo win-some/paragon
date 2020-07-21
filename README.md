@@ -1,4 +1,7 @@
-* Getting started
+* An implementation of Mergeable Replicated Data Types in Clojure
+
+http://gowthamk.github.io/docs/mrdt.pdf
+
 Prerequisites:
 - clojure
 - clj
