@@ -15,7 +15,7 @@
   that x occurs before y."
   [coll]
   (loop [[head & rest] coll
-         ob (mset/multiset)]
+         ob #mset []]
     (if head
       (recur rest (into ob (for [x rest] [head x])))
       ob)))
@@ -25,10 +25,47 @@
   [m]
   (set m))
 
+(defn uniquify-seq
+  "Pair each element with its count in the sequence. This makes it easy to build a
+  directed graph of the nodes without having to worry about repeated values. It also
+  nicely solves the problem of having falsey values.
+
+  ex. [1 2 1] -> [[1 1] [2 1] [1 2]]"
+  [s]
+  (->> s
+       (reduce (fn [res x]
+                 (if-let [x-count (get (:freqs res) x)]
+                   (-> res
+                       (update-in [:freqs x] inc)
+                       (update :res conj [x (inc x-count)]))
+                   (-> res
+                       (assoc-in [:freqs x] 1)
+                       (update :res conj [x 1]))))
+               {:freqs {} :res []})
+       :res))
+
 (defn seq->relations
   [s]
-  {:mem (build-mem s)
-   :ord (build-ob s)})
+  (let [uniquified (uniquify-seq s)]
+    {:mem (build-mem uniquified)
+     :ord (build-ob uniquified)}))
+
+(comment
+  [1 2 1] -> [[1 1] [2 1] [1 2]]
+
+  (reduce (fn [res x]
+            (if-let [x-count (get (:freqs res) x)]
+              (-> res
+                  (update-in [:freqs x] inc)
+                  (update :res conj [x (inc x-count)]))
+              (-> res
+                  (assoc-in [:freqs x] 1)
+                  (update :res conj [x 1]))))
+          {:freqs {} :res []}
+          [1 2 1])
+  {:freqs {1 2, 2 1}, :res [[1 1] [2 1] [1 2]]}
+
+  )
 
 (defn transitively-reduce-graph
   "Remove edge (u,v) if there exists edges (u, w) and (w, v)."
@@ -54,13 +91,250 @@
                                  new-g'))
                          new-g
                          (partition 2 1 edges-that-link-to-node))) ; break edges into pairs
+                 g)))
+
+(defn get-path
+  [g src dest]
+  (loop [curr src
+         to-visit []
+         path []]
+    (let [node (get g curr)
+          [next-curr & next-to-visit] (concat (:out node) to-visit)]
+      (cond (not next-curr)
+            (when-not (empty? path)
+              (conj path curr))
+            (= curr dest)
+            (conj path curr)
+            (not (:out node))
+            (recur next-curr next-to-visit [src])
+            :else
+            (recur next-curr next-to-visit (conj path curr))))))
+
+(defn add-edge
+  [g [src dest]]
+  (-> g
+      (assoc-in [src :val] src)
+      (assoc-in [dest :val] dest)
+      (update-in [src :out] (fnil conj #{}) dest)
+      (update-in [dest :in] (fnil conj #{}) src)))
+
+(defn build-graph
+  [edges]
+  (reduce add-edge {} edges))
+
+(defn remove-edge
+  [g [src dest]]
+  (-> g
+      (update-in [src :out] disj dest)
+      (update-in [dest :in] disj src)))
+
+(defn find-incoming-edges [g node]
+  (map #(vector % node) (get-in g [node :in])))
+
+(defn bfs
+  "Find the path from start to target, if it exists. Not stack safe."
+  ([g target start]
+   (bfs g target [] start))
+  ([g target path curr]
+   (let [{children :out} (get g curr)
+         next-path (conj path curr)]
+     (cond (= target curr)
+           next-path
+
+           children
+           (not-empty (mapcat (partial bfs g target next-path)
+                              children))
+           :else
+           []))))
+
+
+(comment
+  (bfs b 3 1)
+  (1 2 3)
+  nil
+  ()
+  [1]
+  (1 5 6)
+  (2 3 4)
+  (1 2 3 4)
+  (1 2 3)
+  (1 2 3)
+  [[[[] nil] nil]]
+  []
+  [[]]
+
+  )
+
+(defn prune
+  "Remove edge (u,v) if there exists edges (u, w) and (w, v)."
+  [g]
+  (->> (keys g)
+       ;; find all the edges that link to a node
+       (map (partial find-incoming-edges g))
+       ;; if there's more than one link
+       (filter #(>= (count %) 2))
+       (reduce (fn [reduced-g incoming-edges]
+                 (reduce (fn [reducing-g [e1 e2]]
+                           ;; if there's a path from edge 1 to edge 2
+                           (cond (bfs reducing-g (first e2) (first e1))
+                                 ;; remove it
+                                 (remove-edge reducing-g e1)
+                                 ;; if there's path from edge 2 to edge 1
+                                 (bfs reducing-g (first e1) (first e2))
+                                 ;; remove it
+                                 (remove-edge reducing-g e2)
+                                 ;; there should always be a path between the two, this is just for safety
+                                 :else
+                                 reducing-g))
+                         reduced-g
+                         (partition 2 1 incoming-edges))) ; break edges into pairs
                g)))
+
+(comment
+  (def edges [[1 2] [2 3] [3 4] [1 4] [1 3] [2 4]])
+  (def a (reduce add-edge {} edges))
+  (def edges2 [[1 2] [2 3] [3 4] [1 5] [5 6] [6 7]])
+  (def b (build-graph edges2))
+  (def edges3 [[1 2] [1 3]])
+  (def c (build-graph edges3))
+  (def d (build-graph [[1 2] [1 3] [3 5] [2 4]]))
+  b
+  (graph/pprint (apply graph/multidigraph edges))
+  (graph/pprint (transitively-reduce-graph (apply graph/multidigraph edges)))
+  (prune d)
+  {1 {:val 1,           :out #{3 2}},
+   2 {:val 2, :in #{1}, :out #{4}},
+   3 {:val 3, :in #{1}, :out #{5}},
+   5 {:val 5, :in #{3}},
+   4 {:val 4, :in #{2}}}
+
+  {1 {:val 1, :out #{3 2}},
+   2 {:val 2, :in #{1}},
+   3 {:val 3, :in #{1}}}
+
+  {1 {:val 1,           :out #{2}},
+   2 {:val 2, :in #{1}, :out #{3}},
+   3 {:val 3, :in #{2}, :out #{4}},
+   4 {:val 4, :in #{3}}}
+
+
+  (1 2 3 4)
+
+  (bfs a 1 3)
+  [1 4 3]
+  nil
+  [3 4]
+  [3 4 nil]
+  [1 4 3]
+  [1 4]
+
+  [1 nil nil nil]
+  (prune a)
+  (([1 3] [2 3]) ([1 4] [3 4] [2 4]))
+  (() ([1 2]) ([1 3] [2 3]) ([1 4] [3 4] [2 4]))
+  (1 2 3 4)
+
+
+  (-> {}
+      (add-edge [1 2])
+      (add-edge [2 3])
+      (add-edge [3 4])
+      (add-edge [1 4]))
+  {1 {:val 1, :out #{4 2}},
+   2 {:val 2, :in #{1}, :out #{3}},
+   3 {:val 3, :in #{2}, :out #{4}},
+   4 {:val 4, :in #{1 3}}}
+
+  (get-path a 1 3)
+  [1 2 3]
+  (get-path a 1 4)
+  [1 4]
+  (get-path a 4 1) ;; should be nil or empty
+  nil
+  [4]
+
+  [1 2 3]
+  [2 3 4]
+
+  [1 2 3]
+  [1 2 3 4]
+  [1 4 2 3]
+  [1 4 2 3]
+
+  [1 2]
+  [1 2 3]
+  [1 1 2]
+
+  )
+
+(defn topo-sort
+  "Topographically sort a tree, using the ordering function to provide a consistent total
+  order in cases where a node has multiple outgoing edges. Not stack safe. Not type safe."
+  ([g]
+   ;; this will blow up on non-number collections
+   (topo-sort g <))
+  ([g ord]
+   (topo-sort (prune g) ord (->> (vals g)
+                                 (filter (complement :in))
+                                 (first)
+                                 (:val))))
+  ([g ord start]
+   (loop [node (get g start)
+          res [start]]
+     (let [[next & rst :as children] (:out node)]
+       (cond (not next)
+             res
+             rst
+             (concat res (mapcat (partial topo-sort g ord) (sort-by identity ord children)))
+             :else
+             (recur (get g next) (conj res next)))))))
+
+(comment
+  b
+  {1 {:val 1,           :out #{2 5}},
+   2 {:val 2, :in #{1}, :out #{3}},
+   3 {:val 3, :in #{2}, :out #{4}},
+   4 {:val 4, :in #{3}},
+   5 {:val 5, :in #{1}, :out #{6}},
+   6 {:val 6, :in #{5}, :out #{7}},
+   7 {:val 7, :in #{6}}}
+  (topo-sort c <)
+  (1 2 3)
+  (1 3 2)
+  (1 3 5 2 4)
+  (1 2 4 3 5)
+  (1 2 3)
+  (1 2 3 4 5 6 7)
+  [1 2 3 4]
+
+  (let [[next & rst :as children] #{1 2 3}]
+    [next rst children])
+  [1 (3 2) #{1 3 2}]
+
+  [1 2 3 4]
+
+
+  ({:val 1, :out #{4 3 2}}))
+
+
+;; a -> b
+;; b -> c
+;; a -> c (delete this one)
+
+;; [1 2 1]
+;; [uuid1 uuid2 uuid3]
+;; [1 2 3]
+;; [[1 1] [2 1] [1 2]]
+;; membership relation
+;; order relation
+;; (map first)
 
 (defn relations->seq
   [{:keys [mem ord]}]
   ;; step 1 - build directed graph
-  ;; step 2 - sort it topologically
-  ;; step 3 - apply arbitration edge for consistent order
+  ;; step 2 - reduce graph
+  ;; step 3 - sort it topologically
+  ;; step 4 - apply arbitration edge for consistent order
   ;; right now I'm just crudely sorting the ord coll to handle step 3
   ;; ideally topsort should take a comparator function to break ties
   ;; and apply a total order to the result
