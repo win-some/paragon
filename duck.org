@@ -1,0 +1,12 @@
+* project templates with clj and deps.edn
+clojure -Sdeps '{:deps {paragon {:mvn/version "1.8.4"}}}' -m paragon.main
+* architecture outline
+use interceptors to make a very testable executor model on the server
+use re-posh for datascript goodness on the frontend
+use reitit+tilakone to make kee-frame style controllers
+* graphs
+I was expecting topsort to be checking node ids for cycles, not node values.
+
+In my example, it's more accurate to say that the edges are `[1 2] [1 1'] [2 1']`, which doesn't have any cycles and should sort to `(1 2 1')` However, I see now that the edge `[1 1]` is interpreted as a self-directed edge.
+
+In my case, I happen to know that I will never actually have a cycle and that "duplicate" values are in fact distinct. But that won't work with ubergraph because it uses values as the lookup keys in the :node-map.

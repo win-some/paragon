@@ -20,6 +20,9 @@
   aero                        {:mvn/version "1.1.6"}  ; config management
   juxt/clip                   {:mvn/version "0.18.0"} ; state management, repl/reloaded workflow
 
+  ;; cljs
+  com.fulcrologic/fulcro {:mvn/version "3.0.10"}
+
   ;; async
   manifold               {:mvn/version "0.1.8"}
   funcool/promesa        {:mvn/version "4.0.0"}
@@ -55,8 +58,19 @@
  :aliases
  {:dev
   {:extra-paths ["dev"]
+   :extra-deps
+   {org.clojure/clojurescript {:mvn/version "1.10.520" }
+    thheller/shadow-cljs {:mvn/version "2.10.21" }
+    binaryage/devtools {:mvn/version "0.9.10" }
+    org.clojure/tools.namespace {:mvn/version "1.0.0" }}
    :jvm-opts
    ["-Dghostwheel.enabled=true"]}
+
+  :cljs
+  {:extra-deps
+   {thheller/shadow-cljs {:mvn/version "2.10.21"}}
+   :extra-paths ["dev/repl"]
+   :main-opts   ["-m" "shadow.cljs.devtools.cli"]}
 
   :test
   {:extra-paths ["test"]
@@ -72,6 +86,6 @@
    ["-m" "hf.depstar.uberjar" "target/paragon.jar"]}
 
   :outdated
-  {:extra-deps {olical/depot {:mvn/version "1.8.4"}}
+  {:extra-deps {olical/depot {:mvn/version "2.0.1"}}
    :main-opts  ["-m" "depot.outdated.main"]}}
  }

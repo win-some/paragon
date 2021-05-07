@@ -1,0 +1,15 @@
+{:deps true ;; deps come from deps.edn
+ :nrepl
+ {:port 9991}
+
+ :build-defaults
+ {:output-dir      "resources/public/js"
+  :asset-path      "/js"
+  :release-version "min"
+  :devtools        {:ignore-warnings true
+                    :hud #{:errors :progress}}}
+ :builds
+ {:app {:target :browser
+        :modules {:app {:init-fn paragon.client/init}}
+        :devtools {:watch-dir "resources/public"
+                   :preloads [com.fulcrologic.fulcro.inspect.preload]}}}}
